@@ -2,9 +2,11 @@ import glob
 import os
 import re
 
-import pandas as pd
+import dask.dataframe as dd
 
 FOLDER_PATH = "/Users/vigrel/Git/BigDataProject/data/raw"
+
+dtypes = {"ISO2": "object", "ObjectId": "int64"}
 
 
 def get_csv_files(folder_path: str) -> list:
@@ -15,8 +17,8 @@ def get_final_columns(folder_path: str) -> list[str]:
     all_columns = set()
     year_columns = set()
 
-    for path in get_csv_files(folder_path):
-        columns = pd.read_csv(path, index_col="ObjectId", nrows=0).columns
+    for path in get_csv_files(folder_path)[:1]:
+        columns = dd.read_csv(path, dtype=dtypes, assume_missing=True).columns
         all_columns.update(columns)
 
     normalized_columns = set(
@@ -39,10 +41,9 @@ def normalize_columns(df, final_columns):
 
     missing_cols = set(final_columns) - set(df.columns)
     for col in missing_cols:
-        df[col] = pd.NA
+        df[col] = None
 
     df = df[final_columns]
-
     return df
 
 
@@ -52,8 +53,9 @@ if __name__ == "__main__":
     df_list = []
 
     for path in get_csv_files(FOLDER_PATH):
-        df = pd.read_csv(path, index_col="ObjectId")
-        df = normalize_columns(df, general_columns)
+        df = dd.read_csv(path, dtype=dtypes, assume_missing=True)
+        df = df.set_index("ObjectId")
+        df = df.map_partitions(normalize_columns, final_columns=general_columns)
         df_melted = df.melt(
             id_vars=[col for col in general_columns if col not in year_columns],
             value_vars=year_columns,
@@ -64,5 +66,8 @@ if __name__ == "__main__":
         df_melted["datasource"] = path
         df_list.append(df_melted)
 
-    data_processed = pd.concat(df_list, ignore_index=True)
-    data_processed.to_csv("data/processed/dataConcat.csv", index=False)
+    data_processed = dd.concat(df_list)
+
+    data_processed.to_csv(
+        "data/processed/dataConcat.csv", index=False, single_file=True
+    )
