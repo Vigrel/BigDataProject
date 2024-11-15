@@ -47,7 +47,19 @@ def normalize_columns(df, final_columns):
     return df
 
 
-def groupby_country(): ...
+def groupby_country(iterim_df):
+    iterim_df['year'] = iterim_df['year'].str.replace("f", "")
+    iterim_df['indicator_unit'] = iterim_df['indicator'].str.replace(" ", "") + "_" + iterim_df['unit'].str.replace(" ", "")
+
+    index_cols = ["country", "iso2", "iso3", "year"]
+
+    df_processed = iterim_df[["country", "iso2", "iso3", "year", "indicator_unit", "feature_value"]].compute()
+    return df_processed.pivot_table(
+        index=index_cols,
+        columns="indicator_unit",
+        values="feature_value",
+        aggfunc="first"
+    ).reset_index()
 
 
 def main():
@@ -69,27 +81,12 @@ def main():
         df_melted["datasource"] = path
         df_list.append(df_melted)
 
-    data_processed = dd.concat(df_list)
+    data_iterim = dd.concat(df_list)
 
-    data_processed.to_csv("data/iterim/dataConcat.csv", index=False, single_file=True)
+    data_processed = groupby_country(data_iterim)
 
-    column_order = [
-        "country",
-        "iso2",
-        "iso3",
-        "indicator",
-        "unit",
-        "source",
-        "ctscode",
-        "ctsname",
-        "ctsfulldescriptor",
-        "year",
-        "feature_value",
-        "climateinfluence",
-        "datasource",
-    ]
-
-    data_processed[column_order].to_csv("data/iterim/dataConcat.csv", index=False, single_file=True)
+    data_iterim.to_csv("data/iterim/dataConcat_silver.csv", index=False, single_file=True)
+    data_processed.to_csv("data/processed/dataConcat_gold.csv", index=False)
 
 
 if __name__ == "__main__":
