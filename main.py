@@ -47,7 +47,10 @@ def normalize_columns(df, final_columns):
     return df
 
 
-if __name__ == "__main__":
+def groupby_country(): ...
+
+
+def main():
     general_columns, year_columns = get_final_columns(FOLDER_PATH)
     general_columns.extend(year_columns)
     df_list = []
@@ -68,6 +71,26 @@ if __name__ == "__main__":
 
     data_processed = dd.concat(df_list)
 
-    data_processed.to_csv(
-        "data/processed/dataConcat.csv", index=False, single_file=True
-    )
+    data_processed.to_csv("data/iterim/dataConcat.csv", index=False, single_file=True)
+
+    column_order = [
+        "country",
+        "iso2",
+        "iso3",
+        "indicator",
+        "unit",
+        "source",
+        "ctscode",
+        "ctsname",
+        "ctsfulldescriptor",
+        "year",
+        "feature_value",
+        "climateinfluence",
+        "datasource",
+    ]
+
+    data_processed[column_order].to_csv("data/iterim/dataConcat.csv", index=False, single_file=True)
+
+
+if __name__ == "__main__":
+    main()
