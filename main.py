@@ -46,7 +46,7 @@ def get_final_columns(folder_path: str) -> Tuple[List[str], List[str]]:
     """
     all_columns = set()
 
-    for path in get_csv_files(folder_path)[:1]:
+    for path in get_csv_files(folder_path):
         columns = dd.read_csv(path, dtype=dtypes, assume_missing=True).columns
         all_columns.update(columns)
 
